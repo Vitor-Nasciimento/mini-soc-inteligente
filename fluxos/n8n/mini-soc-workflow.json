@@ -1,0 +1,190 @@
+{
+  "name": "My workflow 3",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "wazuh-alert",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -192,
+        -16
+      ],
+      "id": "84ed86b3-aa99-41e7-a2a8-3272632db12c",
+      "name": "Webhook",
+      "webhookId": "bc9c6e9d-84a7-4d21-adbd-360929d62a40"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Você recebe um evento de segurança real do Wazuh.\n\n{{ $json.ai_context }}\n\nSua única tarefa é explicar, em linguagem simples, o que o evento registrado representa.\n\nREGRAS ABSOLUTAS:\n\n- Use somente informações presentes nos dados.\n- Não invente informações.\n- Não faça recomendações.\n- Não avalie senhas.\n- Não fale sobre acesso a arquivos ou recursos.\n- Não fale sobre malware.\n- Não fale sobre invasão ou ataque.\n- Não fale sobre vazamento.\n- Não fale sobre comportamento futuro.\n- Não especule sobre a intenção do usuário.\n- Não invente informações sobre o sistema operacional.\n- Não diga que o evento é malicioso.\n- Não altere os valores dos dados.\n- Não repita todos os campos técnicos.\n\nResponda em APENAS uma ou duas frases.\n\nExplique somente o significado do evento registrado pelo Wazuh.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        544,
+        0
+      ],
+      "id": "a5044e60-6a85-4377-98b5-d97ece5914cf",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "qwen2.5:1.5b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        128,
+        208
+      ],
+      "id": "5c8b5e8b-883d-4df6-9c4c-7f81264133a2",
+      "name": "Ollama Chat Model",
+      
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const alert = $json.body;\n\nreturn {\n  json: {\n    timestamp: alert.timestamp ?? \"Não informado\",\n    severity: alert.rule?.level ?? \"Não informado\",\n    rule_id: alert.rule?.id ?? \"Não informado\",\n    rule_description: alert.rule?.description ?? \"Não informado\",\n    fired_times: alert.rule?.firedtimes ?? \"Não informado\",\n\n    endpoint: alert.agent?.name ?? \"Não informado\",\n    endpoint_ip: alert.agent?.ip ?? \"Não informado\",\n\n    event_id: alert.data?.win?.system?.eventID ?? \"Não informado\",\n    channel: alert.data?.win?.system?.channel ?? \"Não informado\",\n    computer: alert.data?.win?.system?.computer ?? \"Não informado\",\n    provider: alert.data?.win?.system?.providerName ?? \"Não informado\",\n    severity_value: alert.data?.win?.system?.severityValue ?? \"Não informado\",\n\n    target_user: alert.data?.win?.eventdata?.targetUserName ?? \"Não informado\",\n    target_domain: alert.data?.win?.eventdata?.targetDomainName ?? \"Não informado\",\n    subject_user: alert.data?.win?.eventdata?.subjectUserName ?? \"Não informado\",\n    subject_domain: alert.data?.win?.eventdata?.subjectDomainName ?? \"Não informado\"\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        48,
+        0
+      ],
+      "id": "f050f667-22dd-4468-9080-425cb6a239f7",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "jsCode": "const alerta = $('Code in JavaScript').first().json;\n\n// Resultado produzido pela IA\nconst analiseIA = $json.output ?? $json.text ?? \"Não foi possível gerar a análise da IA.\";\n\n// Recomendações definidas pelo fluxo, sem depender da IA\nlet recomendacao = \"Verificar se a ação registrada foi autorizada.\";\n\nif (alerta.rule_id === \"100003\") {\n  recomendacao = [\n    \"Confirmar se a criação ou ativação da conta foi autorizada.\",\n    \"Verificar quem realizou a ação registrada no evento.\",\n    \"Verificar atividades posteriores associadas à conta.\"\n  ].join(\"\\n\");\n}\n\nconst relatorio = `🚨 ALERTA DE SEGURANÇA\n\n📋 IDENTIFICAÇÃO\n\nSeveridade Wazuh: ${alerta.severity}\nRegra: ${alerta.rule_id} - ${alerta.rule_description}\nEndpoint: ${alerta.endpoint}\nIP do Endpoint: ${alerta.endpoint_ip}\nUsuário afetado: ${alerta.target_user}\nUsuário responsável: ${alerta.subject_user}\nData/Hora: ${alerta.timestamp}\nEvento Windows: ${alerta.event_id}\nCanal: ${alerta.channel}\n\n🧠 ANÁLISE ASSISTIDA POR IA\n\n${analiseIA}\n\n🛠️ RECOMENDAÇÕES\n\n${recomendacao}\n\n📌 DADOS TÉCNICOS\n\nComputer: ${alerta.computer}\nProvider: ${alerta.provider}\nResultado da auditoria: ${alerta.severity_value}\nOcorrências da regra: ${alerta.fired_times}\n`;\n\nreturn {\n  json: {\n    ...alerta,\n    ai_analysis: analiseIA,\n    report: relatorio\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        912,
+        0
+      ],
+      "id": "3fa752ef-7452-48e9-bdb5-4da4c390b567",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const alerta = $('Code in JavaScript').first().json;\n\nreturn {\n  json: {\n    ai_context: JSON.stringify(alerta, null, 2)\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        272,
+        0
+      ],
+      "id": "2b794bc8-f534-4630-bf98-82f0e040e42f",
+      "name": "Preparar contexto IA"
+    },
+    {
+      "parameters": {
+        "chatId": "SEU_CHAT_ID",
+        "text": "={{ $json.report }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1136,
+        0
+      ],
+      "id": "52f89d43-579d-46f1-8251-9bee994cdd4d",
+      "name": "Send a text message",
+      "webhookId": "07971adb-7c2f-430c-95d4-e752252df1ce",
+     
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Preparar contexto IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar contexto IA": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "c989f97d-deea-4be0-b149-f210bb54120f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    
+  },
+  "nodeGroups": [],
+  "id": "tRj5vDgj8UW3pEn6",
+  "tags": []
+}
